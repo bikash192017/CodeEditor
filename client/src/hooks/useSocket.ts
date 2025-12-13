@@ -1,0 +1,35 @@
+import { useEffect } from 'react';
+import { getSocket, disconnectSocket } from '../utils/socket';
+import type { Socket } from 'socket.io-client';
+
+export const useSocket = (eventName: string, handler: (...args: any[]) => void) => {
+  useEffect(() => {
+    const socket = getSocket();
+    
+    socket.on(eventName, handler);
+
+    return () => {
+      socket.off(eventName, handler);
+    };
+  }, [eventName, handler]);
+};
+
+export const useSocketConnection = () => {
+  useEffect(() => {
+    const socket = getSocket();
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+};
+
+export default useSocket;
+
+
+
+
+
+
+
+

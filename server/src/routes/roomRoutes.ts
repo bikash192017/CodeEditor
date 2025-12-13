@@ -1,0 +1,26 @@
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import {
+  createRoom,
+  getRooms,
+  getRoomById,
+  updateRoom,
+  addCollaborator,
+  joinRoom,
+  leaveRoom,
+  deleteRoom,
+} from '../controllers/roomController.js';
+
+const router = express.Router();
+
+// Routes
+router.post('/create', protect, createRoom);
+router.get('/', protect, getRooms);
+router.get('/:roomId', protect, getRoomById);
+router.put('/:roomId', protect, updateRoom);
+router.post('/:roomId/add-collaborator', protect, addCollaborator);
+router.post('/:roomId/join', protect, joinRoom);
+router.post('/:roomId/leave', protect, leaveRoom);
+router.delete('/:roomId', protect, deleteRoom);
+
+export default router;

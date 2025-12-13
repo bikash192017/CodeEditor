@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CollabCode - Collaborative Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        body {
+            background-color: var(--darker);
+            color: var(--light);
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--dark);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--light);
+        }
+
+        .logo i {
+            color: var(--primary);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .room-info {
+            background-color: var(--darker);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .room-info i {
+            color: var(--secondary);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #0da271;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--gray);
+            border: 1px solid var(--gray);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            flex: 3;
+            background-color: var(--dark);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-tabs {
+            display: flex;
+            background-color: var(--darker);
+            padding: 0.5rem 0.5rem 0 0.5rem;
+        }
+
+        .editor-tab {
+            padding: 0.7rem 1.5rem;
+            background-color: var(--dark);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-tab.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .editor-container {
+            flex: 1;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        .code-editor {
+            width: 100%;
+            height: 100%;
+            background-color: #1a1f36;
+            border-radius: 8px;
+            padding: 1rem;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            resize: none;
+            outline: none;
+        }
+
+        .io-container {
+            display: flex;
+            flex-direction: column;
+            height: 40%;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .io-tabs {
+            display: flex;
+            background-color: var(--darker);
+            padding: 0.5rem;
+        }
+
+        .io-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .io-tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .io-content {
+            flex: 1;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        .io-textarea {
+            width: 100%;
+            height: 100%;
+            background-color: #1a1f36;
+            border-radius: 8px;
+            padding: 1rem;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            resize: none;
+            outline: none;
+        }
+
+        .terminal {
+            background-color: #1a1f36;
+            border-radius: 8px;
+            padding: 1rem;
+            height: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #e2e8f0;
+            overflow: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terminal-line {
+            margin-bottom: 0.5rem;
+        }
+
+        .terminal-prompt {
+            color: var(--secondary);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            max-width: 350px;
+            background-color: var(--dark);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            background-color: var(--darker);
+            padding: 0.5rem;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.7rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .sidebar-tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        /* Chat Section */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            max-width: 85%;
+        }
+
+        .message.own {
+            background-color: var(--primary);
+            margin-left: auto;
+        }
+
+        .message.other {
+            background-color: var(--darker);
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            color: var(--gray);
+        }
+
+        .message.own .message-sender {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .message-content {
+            font-size: 0.9rem;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--darker);
+            color: var(--light);
+            outline: none;
+        }
+
+        .chat-input button {
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Participants Section */
+        .participants-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.8rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .participant-info {
+            flex: 1;
+        }
+
+        .participant-name {
+            font-weight: 600;
+        }
+
+        .participant-status {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .participant-status.online {
+            color: var(--success);
+        }
+
+        .participant-status.typing {
+            color: var(--warning);
+        }
+
+        /* History Section */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .history-item {
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-title {
+            font-weight: 600;
+        }
+
+        .history-time {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .history-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: var(--gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                max-width: 100%;
+                height: 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <span>CollabCode</span>
+            </div>
+            <div class="header-controls">
+                <div class="room-info">
+                    <i class="fas fa-users"></i>
+                    <span>Room: DevTeam-ProjectX</span>
+                </div>
+                <button class="btn btn-outline">
+                    <i class="fas fa-share"></i>
+                    Share
+                </button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    Run Code
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="editor-panel">
+                <div class="editor-tabs">
+                    <div class="editor-tab active">
+                        <i class="fas fa-file-code"></i>
+                        main.py
+                    </div>
+                    <div class="editor-tab">
+                        <i class="fas fa-file-code"></i>
+                        utils.py
+                    </div>
+                    <div class="editor-tab">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <textarea class="code-editor" id="codeEditor"># Welcome to CollabCode!
+# This is a collaborative Python editor
+
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n-1)
+
+def main():
+    num = 5
+    result = factorial(num)
+    print(f"The factorial of {num} is {result}")
+
+if _name_ == "_main_":
+    main()</textarea>
+                </div>
+                <div class="io-container">
+                    <div class="io-tabs">
+                        <div class="io-tab active">
+                            <i class="fas fa-terminal"></i>
+                            Output
+                        </div>
+                        <div class="io-tab">
+                            <i class="fas fa-keyboard"></i>
+                            Input
+                        </div>
+                    </div>
+                    <div class="io-content">
+                        <div class="terminal">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">$</span> python main.py
+                            </div>
+                            <div class="terminal-line">
+                                The factorial of 5 is 120
+                            </div>
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">$</span> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <div class="sidebar-tab active" data-tab="chat">
+                        <i class="fas fa-comments"></i>
+                        Chat
+                    </div>
+                    <div class="sidebar-tab" data-tab="participants">
+                        <i class="fas fa-users"></i>
+                        Participants
+                    </div>
+                    <div class="sidebar-tab" data-tab="history">
+                        <i class="fas fa-history"></i>
+                        History
+                    </div>
+                </div>
+                <div class="sidebar-content">
+                    <!-- Chat Tab Content -->
+                    <div class="chat-container" id="chat-tab">
+                        <div class="chat-messages">
+                            <div class="message other">
+                                <div class="message-sender">Alex</div>
+                                <div class="message-content">Hey team, I've added the factorial function. Can someone help optimize it?</div>
+                            </div>
+                            <div class="message own">
+                                <div class="message-sender">You</div>
+                                <div class="message-content">I can take a look. Have you considered using memoization?</div>
+                            </div>
+                            <div class="message other">
+                                <div class="message-sender">Sam</div>
+                                <div class="message-content">Good idea! I'll work on implementing that.</div>
+                            </div>
+                            <div class="message other">
+                                <div class="message-sender">Jordan</div>
+                                <div class="message-content">I noticed we're missing error handling for negative numbers.</div>
+                            </div>
+                        </div>
+                        <div class="chat-input">
+                            <input type="text" placeholder="Type your message...">
+                            <button><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Participants Tab Content -->
+                    <div class="participants-list" id="participants-tab" style="display: none;">
+                        <div class="participant">
+                            <div class="participant-avatar">Y</div>
+                            <div class="participant-info">
+                                <div class="participant-name">You</div>
+                                <div class="participant-status online">Online</div>
+                            </div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-avatar">A</div>
+                            <div class="participant-info">
+                                <div class="participant-name">Alex</div>
+                                <div class="participant-status online">Online</div>
+                            </div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-avatar">S</div>
+                            <div class="participant-info">
+                                <div class="participant-name">Sam</div>
+                                <div class="participant-status typing">Typing...</div>
+                            </div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-avatar">J</div>
+                            <div class="participant-info">
+                                <div class="participant-name">Jordan</div>
+                                <div class="participant-status online">Online</div>
+                            </div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-avatar">T</div>
+                            <div class="participant-info">
+                                <div class="participant-name">Taylor</div>
+                                <div class="participant-status">Away</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Tab Content -->
+                    <div class="history-list" id="history-tab" style="display: none;">
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div class="history-title">Factorial Implementation</div>
+                                <div class="history-time">10:24 AM</div>
+                            </div>
+                            <div class="history-code">def factorial(n): ...</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div class="history-title">Added Main Function</div>
+                                <div class="history-time">09:45 AM</div>
+                            </div>
+                            <div class="history-code">def main(): ...</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div class="history-title">Initial Setup</div>
+                                <div class="history-time">Yesterday, 3:12 PM</div>
+                            </div>
+                            <div class="history-code"># Welcome to CollabCode! ...</div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div class="history-title">Project Creation</div>
+                                <div class="history-time">May 15, 2:30 PM</div>
+                            </div>
+                            <div class="history-code"># New Python project started</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.sidebar-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.sidebar-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Hide all tab contents
+                document.getElementById('chat-tab').style.display = 'none';
+                document.getElementById('participants-tab').style.display = 'none';
+                document.getElementById('history-tab').style.display = 'none';
+                
+                // Show the selected tab content
+                const tabId = tab.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).style.display = 'block';
+            });
+        });
+
+        // IO tabs functionality
+        document.querySelectorAll('.io-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.io-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // In a real app, you would switch between input and output here
+            });
+        });
+
+        // Editor tabs functionality
+        document.querySelectorAll('.editor-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                if (tab.querySelector('.fa-plus')) {
+                    // Add new tab logic would go here
+                    alert('Add new file functionality would go here');
+                    return;
+                }
+                
+                // Remove active class from all tabs
+                document.querySelectorAll('.editor-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // In a real app, you would switch between files here
+            });
+        });
+
+        // Chat functionality
+        const chatInput = document.querySelector('.chat-input input');
+        const chatMessages = document.querySelector('.chat-messages');
+        
+        document.querySelector('.chat-input button').addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message own';
+                messageElement.innerHTML = `
+                    <div class="message-sender">You</div>
+                    <div class="message-content">${message}</div>
+                `;
+                chatMessages.appendChild(messageElement);
+                chatInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Simulate a response after a delay
+                setTimeout(() => {
+                    const responses = [
+                        "That's a good point!",
+                        "I'll look into that.",
+                        "Can you explain more?",
+                        "Let me test that code."
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    const responseElement = document.createElement('div');
+                    responseElement.className = 'message other';
+                    responseElement.innerHTML = `
+                        <div class="message-sender">Alex</div>
+                        <div class="message-content">${randomResponse}</div>
+                    `;
+                    chatMessages.appendChild(responseElement);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+            }
+        }
+
+        // Run code button functionality
+        document.querySelector('.btn-primary').addEventListener('click', () => {
+            const terminal = document.querySelector('.terminal');
+            const newLine = document.createElement('div');
+            newLine.className = 'terminal-line';
+            newLine.innerHTML = <span class="terminal-prompt">$</span> Code executed successfully!;
+            terminal.appendChild(newLine);
+            terminal.scrollTop = terminal.scrollHeight;
+        });
+    </script>
+</body>
+</html>
