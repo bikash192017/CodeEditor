@@ -15,7 +15,7 @@ export default function Rooms() {
 
   // Added: loading and error states for UX
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+  const [_error, setError] = useState<string | null>(null)
 
   const { show } = useToast()
 

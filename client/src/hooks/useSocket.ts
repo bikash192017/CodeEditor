@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import { getSocket, disconnectSocket } from '../utils/socket';
-import type { Socket } from 'socket.io-client';
 
 export const useSocket = (eventName: string, handler: (...args: any[]) => void) => {
   useEffect(() => {
     const socket = getSocket();
-    
+
     socket.on(eventName, handler);
 
     return () => {
@@ -16,7 +15,7 @@ export const useSocket = (eventName: string, handler: (...args: any[]) => void) 
 
 export const useSocketConnection = () => {
   useEffect(() => {
-    const socket = getSocket();
+    getSocket();
 
     return () => {
       disconnectSocket();
