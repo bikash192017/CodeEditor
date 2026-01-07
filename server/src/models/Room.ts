@@ -1,7 +1,15 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
-import { nanoid } from 'nanoid';
+import { generateRoomId } from '../utils/roomIdGenerator';
 
 // TypeScript interface for Room
+// User in room metadata
+export interface IRoomUser {
+  userId: Types.ObjectId;
+  userName: string;
+  role: 'owner' | 'collaborator';
+  joinedAt: Date;
+}
+
 export interface IRoom extends Document {
   roomId: string;
   name: string;
@@ -9,7 +17,10 @@ export interface IRoom extends Document {
   language: 'javascript' | 'python' | 'java' | 'cpp' | 'typescript' | 'go' | 'rust';
   code: string;
   collaborators: Types.ObjectId[];
+  users: IRoomUser[]; // Active users with metadata
+  maxUsers: number; // Maximum allowed users
   isPublic: boolean;
+  isActive: boolean; // Room active status
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,9 +58,25 @@ const roomSchema = new Schema<IRoom>(
         ref: 'User',
       },
     ],
+    users: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        userName: { type: String, required: true },
+        role: { type: String, enum: ['owner', 'collaborator'], required: true },
+        joinedAt: { type: Date, default: Date.now },
+      },
+    ],
+    maxUsers: {
+      type: Number,
+      default: 50,
+    },
     isPublic: {
       type: Boolean,
       default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }
@@ -63,7 +90,7 @@ roomSchema.pre('validate', async function (next) {
     let unique = false;
 
     while (!unique) {
-      id = nanoid(12);
+      id = generateRoomId(); // ABC-123 format
       const existing = await RoomModel.findOne({ roomId: id });
       if (!existing) unique = true;
     }

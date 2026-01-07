@@ -1,8 +1,11 @@
+// Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
 import * as http from 'http';
 import mongoose from 'mongoose';
 
@@ -11,10 +14,10 @@ import roomRoutes from './routes/roomRoutes.js';
 import codeSessionRoutes from './routes/codeSessionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import executeRoutes from './routes/executeRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import { initializeSocket } from './socket/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
-dotenv.config();
 const app = express();
 
 // Security
@@ -60,6 +63,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/sessions', codeSessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/execute', executeRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date() });

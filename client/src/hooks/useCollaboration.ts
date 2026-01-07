@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSocket } from '../contexts/SocketContext'
+import { useEditorStore } from '../store/editorStore'
 
 type UserCursor = {
   userId: string
@@ -13,9 +14,10 @@ type TypingUser = { userId: string; username: string; isTyping: boolean }
 
 export function useCollaboration(roomId: string | undefined) {
   const { socket, isConnected } = useSocket()
-;(window as any).socket = socket
-  const [code, setCode] = useState<string>('// Start coding...')
-  const [language, setLanguage] = useState<string>('javascript')
+    ; (window as any).socket = socket
+
+  const { code, setCode, language, setLanguage } = useEditorStore()
+
   const [users, setUsers] = useState<Record<string, { username: string }>>({})
   const [cursors, setCursors] = useState<Record<string, UserCursor>>({})
   const [chat, setChat] = useState<ChatMsg[]>([])

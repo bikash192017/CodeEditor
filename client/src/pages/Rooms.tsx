@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import logo from '../assets/logo.png'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../utils/api'
@@ -23,6 +24,8 @@ export default function Rooms() {
   const [newRoomName, setNewRoomName] = useState('')
   const [newRoomDesc, setNewRoomDesc] = useState('')
   const [newRoomPublic, setNewRoomPublic] = useState(true)
+  const [isJoinOpen, setIsJoinOpen] = useState(false)
+  const [joinRoomId, setJoinRoomId] = useState('')
 
   // Derived: friendly greeting
   const greeting = useMemo(() => {
@@ -41,29 +44,29 @@ export default function Rooms() {
   // Added: fetch rooms from backend on mount (persists across sessions)
   useEffect(() => {
     let active = true
-    ;(async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        // GET /api/rooms returns { success, data: { rooms } }
-        const res = await api.get('/rooms')
-        if (active) {
-          const fetched = (res.data?.data?.rooms || []).map((r: any) => ({
-            roomId: r.roomId,
-            name: r.name,
-            description: r.description,
-            isPublic: r.isPublic,
-          }))
-          setRooms(fetched)
+      ; (async () => {
+        try {
+          setIsLoading(true)
+          setError(null)
+          // GET /api/rooms returns { success, data: { rooms } }
+          const res = await api.get('/rooms')
+          if (active) {
+            const fetched = (res.data?.data?.rooms || []).map((r: any) => ({
+              roomId: r.roomId,
+              name: r.name,
+              description: r.description,
+              isPublic: r.isPublic,
+            }))
+            setRooms(fetched)
+          }
+        } catch (err: any) {
+          const message = err?.response?.data?.message || 'Failed to fetch rooms'
+          setError(message)
+          show(message, 'error')
+        } finally {
+          setIsLoading(false)
         }
-      } catch (err: any) {
-        const message = err?.response?.data?.message || 'Failed to fetch rooms'
-        setError(message)
-        show(message, 'error')
-      } finally {
-        setIsLoading(false)
-      }
-    })()
+      })()
     return () => {
       active = false
     }
@@ -88,12 +91,17 @@ export default function Rooms() {
           { roomId: r.roomId, name: r.name, description: r.description, isPublic: r.isPublic },
           ...prev,
         ])
-        show('Room created', 'success')
+        show('Room created successfully!', 'success')
+
+        // Navigate to the newly created room
+        setNewRoomName('')
+        setNewRoomDesc('')
+        setNewRoomPublic(true)
+        setIsCreateOpen(false)
+
+        // Navigate to the room
+        navigate(`/rooms/${r.roomId}`)
       }
-      setNewRoomName('')
-      setNewRoomDesc('')
-      setNewRoomPublic(true)
-      setIsCreateOpen(false)
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Failed to create room'
       setError(message)
@@ -108,9 +116,23 @@ export default function Rooms() {
     try {
       setIsLoading(true)
       setError(null)
-      await api.post(`/rooms/${roomId}/join`)
-      show('Joined room', 'success')
-      navigate(`/rooms/${roomId}`)
+
+      // Normalize Room ID
+      const normalizedId = roomId.trim()
+
+      // Validate format: Accept both ABC-123 (new) and 12-char legacy IDs
+      const newFormat = /^[A-HJ-NP-Z]{3}-[2-9]{3}$/i
+      const legacyFormat = /^[a-zA-Z0-9_-]{12}$/
+
+      if (!newFormat.test(normalizedId) && !legacyFormat.test(normalizedId)) {
+        show('Invalid Room ID format', 'error')
+        setIsLoading(false)
+        return
+      }
+
+      await api.post(`/rooms/${normalizedId}/join`)
+      show('Joined room successfully!', 'success')
+      navigate(`/rooms/${normalizedId}`)
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Failed to join room'
       setError(message)
@@ -120,16 +142,51 @@ export default function Rooms() {
     }
   }
 
+  // Handle join room from modal
+  async function handleJoinRoomSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!joinRoomId.trim()) return
+    await handleJoinRoom(joinRoomId)
+    setJoinRoomId('')
+    setIsJoinOpen(false)
+  }
+
+  // Format Room ID input (support both ABC-123 and legacy formats)
+  function handleRoomIdInput(value: string) {
+    // Remove all non-alphanumeric characters except hyphen and underscore
+    let formatted = value.replace(/[^A-Za-z0-9-_]/g, '')
+
+    // Auto-add hyphen after 3 characters ONLY if it looks like ABC-123 format
+    if (formatted.length === 3 && /^[A-Za-z]{3}$/.test(formatted)) {
+      formatted = formatted.toUpperCase() + '-'
+    } else if (formatted.length > 3 && formatted[3] !== '-' && /^[A-Za-z]{3}$/.test(formatted.slice(0, 3))) {
+      // Insert hyphen if first 3 chars are letters
+      formatted = formatted.slice(0, 3).toUpperCase() + '-' + formatted.slice(3)
+    }
+
+    // Limit to 12 characters (legacy) or 7 (ABC-123)
+    formatted = formatted.slice(0, 12)
+
+    setJoinRoomId(formatted)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
       <div className="mx-auto max-w-6xl">
         {/* Added: Top bar with page title and a11y-friendly Logout button */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">Rooms</h1>
-            <p className="text-slate-300/80 text-sm">
-              {greeting}{user ? `, ${user.username}` : ''}. Explore or create rooms below.
-            </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-[2px] shadow-lg shadow-indigo-500/30">
+              <div className="w-full h-full bg-slate-900 rounded-[10px] overflow-hidden flex items-center justify-center">
+                <img src={logo} alt="CollabCode Logo" className="w-full h-full object-cover" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white tracking-tight">CollabCode</h1>
+              <p className="text-slate-400 text-sm">
+                {greeting}{user ? `, ${user.username}` : ''}. Select a room to start coding.
+              </p>
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -143,7 +200,13 @@ export default function Rooms() {
 
         {/* Added: Actions row with Create New Room button */}
         <div className="flex items-center justify-between mb-4">
-          <div />
+          <button
+            onClick={() => setIsJoinOpen(true)}
+            className="rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 flex items-center gap-2"
+          >
+            <i className="fa-solid fa-right-to-bracket"></i>
+            Join Room
+          </button>
           <button
             onClick={() => setIsCreateOpen(true)}
             className="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
@@ -192,6 +255,62 @@ export default function Rooms() {
           </div>
         )}
       </div>
+
+      {/* Join Room Modal */}
+      {isJoinOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Modal backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/70"
+            onClick={() => setIsJoinOpen(false)}
+            aria-hidden="true"
+          />
+          {/* Modal panel */}
+          <div className="relative w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/10 rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+              <i className="fa-solid fa-right-to-bracket text-indigo-400"></i>
+              Join a Room
+            </h2>
+            <form onSubmit={handleJoinRoomSubmit} className="space-y-4">
+              <div>
+                <label className="block text-slate-200 text-sm mb-1">Room ID</label>
+                <input
+                  value={joinRoomId}
+                  onChange={(e) => handleRoomIdInput(e.target.value)}
+                  required
+                  maxLength={12}
+                  className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 font-mono text-lg tracking-wider text-center"
+                  placeholder="ABC-123 or legacy ID"
+                  autoFocus
+                />
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Enter Room ID (ABC-123 or 12-character legacy ID)
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsJoinOpen(false)}
+                  className="flex-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={joinRoomId.length < 3}
+                  className="flex-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Join Room
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Added: Create Room modal (simple, accessible dialog) */}
       {isCreateOpen && (

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api from '../utils/api';
 
-interface User {
+export interface User {
   _id: string;
   username: string;
   email: string;
@@ -24,7 +24,7 @@ interface AuthActions {
   clearError: () => void;
 }
 
-type AuthStore = AuthState & AuthActions;
+export type AuthStore = AuthState & AuthActions;
 
 export const useAuthStore = create<AuthStore>((set) => ({
   // Initial state

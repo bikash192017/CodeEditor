@@ -1,9 +1,7 @@
 import { createContext, useContext, useEffect, useMemo } from 'react'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore, AuthStore } from '../stores/authStore'
 
-type AuthContextValue = ReturnType<typeof useAuthStore>
-
-const AuthContext = createContext<AuthContextValue | null>(null)
+const AuthContext = createContext<AuthStore | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const state = useAuthStore()

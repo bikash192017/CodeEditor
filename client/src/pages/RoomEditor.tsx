@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import logo from '../assets/logo.png'
+import backLogo from '../assets/back-logo.png'
 import { Link, useParams } from 'react-router-dom'
 import api from '../utils/api'
 import { useToast } from '../contexts/ToastContext'
@@ -23,12 +25,17 @@ export default function RoomEditor() {
   ])
   const [editorHeight, setEditorHeight] = useState(65)
   const resizerRef = useRef<HTMLDivElement>(null)
-  const [showParticipants, setShowParticipants] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
   const [savedFiles, setSavedFiles] = useState<any[]>([])
   const [showSavedFiles, setShowSavedFiles] = useState(false)
   const [isLoadingFiles, setIsLoadingFiles] = useState(false)
   const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'participants' | 'history'>('chat')
+  const [showCreateFileModal, setShowCreateFileModal] = useState(false)
+  const [newFileName, setNewFileName] = useState('')
+  const [newFileLanguage, setNewFileLanguage] = useState('javascript')
+  const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
+  const [suggestion, setSuggestion] = useState<{ name: string; type: 'function' | 'variable'; pos: { x: number; y: number } } | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const {
     code,
@@ -40,7 +47,7 @@ export default function RoomEditor() {
     users = {},
     chat = [],
     sendChat,
-    typingUsers = [], // Fixed: Ensure it's an array
+    typingUsers = {},
     sendTyping,
     isConnected,
   } = useCollaboration(roomId)
@@ -52,17 +59,14 @@ export default function RoomEditor() {
   const chatEndRef = useRef<HTMLDivElement | null>(null)
   const chatContainerRef = useRef<HTMLDivElement | null>(null)
   const languageDropdownRef = useRef<HTMLDivElement>(null)
-  const sidebarRef = useRef<HTMLDivElement>(null)
   const currentUser = useAuthStore((s) => s.user)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
         setShowLanguageDropdown(false)
-      }
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setShowParticipants(false)
       }
     }
 
@@ -73,33 +77,170 @@ export default function RoomEditor() {
   // --- Join Room ---
   useEffect(() => {
     if (!roomId) return
-    ;(async () => {
-      try {
-        const res = await api.post(`/rooms/${roomId}/join`)
-        const { success, data } = res.data
-        if (success) setRoomName(data?.room?.name || 'Room')
-      } catch {
-        show('Failed to join room', 'error')
-      }
-    })()
+      ; (async () => {
+        try {
+          console.log('🔵 Attempting to join room:', roomId)
+          const res = await api.post(`/rooms/${roomId}/join`)
+          const { success, data } = res.data
+          if (success) {
+            console.log('✅ Successfully joined room:', data?.room)
+            setRoomName(data?.room?.name || 'Room')
+          }
+        } catch (error: any) {
+          console.error('❌ Failed to join room:', error.response?.data || error.message)
+          show(error.response?.data?.message || 'Failed to join room', 'error')
+        }
+      })()
   }, [roomId, show])
 
   // --- Editor setup ---
   const onEditorMount: OnMount = (editor) => {
     editorRef.current = editor
     cursorMgrRef.current = new CursorOverlayManager(editor)
-    editor.onDidChangeCursorPosition((e) => sendCursor(e.position))
+    editor.onDidChangeCursorPosition((e: any) => {
+      sendCursor(e.position)
+      detectUndefinedSymbol(e.position)
+    })
+  }
+
+  const detectUndefinedSymbol = (position: { lineNumber: number; column: number }) => {
+    if (!editorRef.current || !code) return
+
+    const model = editorRef.current.getModel()
+    const wordInfo = model.getWordAtPosition(position)
+    if (!wordInfo) {
+      setSuggestion(null)
+      return
+    }
+
+    const symbolName = wordInfo.word
+    console.log('Checking symbol:', symbolName)
+    const lineContent = model.getLineContent(position.lineNumber)
+    const afterWord = lineContent.substring(wordInfo.endColumn - 1)
+
+    // Validate identifier: must start with letter/underscore and contain only valid chars
+    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(symbolName)) {
+      console.log('Invalid identifier:', symbolName)
+      setSuggestion(null)
+      return
+    }
+
+    // Only ignore truly global/built-in objects - NOT language keywords
+    const builtIns = ['console', 'alert', 'prompt', 'confirm', 'setTimeout', 'setInterval', 'fetch', 'Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Promise', 'window', 'document', 'System', 'out', 'println']
+    if (builtIns.includes(symbolName)) {
+      console.log('Built-in detected:', symbolName)
+      setSuggestion(null)
+      return
+    }
+
+    // Check if it's a function call (followed by '(')
+    const isFunctionCall = /^\s*\(/.test(afterWord)
+    console.log('Is function call:', isFunctionCall)
+
+    // Simplified check: just look for the symbol name being declared anywhere
+    const isDefined =
+      code.includes(`function ${symbolName}`) ||
+      code.includes(`const ${symbolName}`) ||
+      code.includes(`let ${symbolName}`) ||
+      code.includes(`var ${symbolName}`) ||
+      code.includes(`class ${symbolName}`) ||
+      new RegExp(`\\b(int|double|float|long|boolean|char|String)\\s+${symbolName}\\b`).test(code) ||
+      new RegExp(`\\(\\s*[^)]*\\b${symbolName}\\s*[,)]`).test(code) // parameter
+
+    console.log('Is defined:', isDefined)
+
+    if (!isDefined) {
+      let pos = editorRef.current.getScrolledVisiblePosition(position)
+      // Fallback if getScrolledVisiblePosition returns null
+      if (!pos) {
+        console.log('getScrolledVisiblePosition returned null, using fallback')
+        pos = { left: 100, top: 100 }
+      }
+      console.log('Showing suggestion for:', symbolName, 'at position:', pos)
+      setSuggestion({
+        name: symbolName,
+        type: isFunctionCall ? 'function' : 'variable',
+        pos: { x: pos.left, y: pos.top }
+      })
+    } else {
+      setSuggestion(null)
+    }
+  }
+
+  const handleDeepScan = async () => {
+    try {
+      setIsAnalyzing(true)
+      show('Analyzing code with Gemini...', 'info')
+      const res = await api.post('/ai/analyze', { code, language })
+      const { success, missing } = res.data
+
+      if (success && missing && missing.length > 0) {
+        show(`Gemini found ${missing.length} missing definitions.`, 'success')
+        const first = missing[0]
+        setSuggestion({
+          name: first.name,
+          type: first.type as 'function' | 'variable',
+          pos: { x: 100, y: 100 }
+        })
+      } else {
+        show('Gemini found no missing definitions!', 'success')
+      }
+    } catch (error: any) {
+      console.error('Deep Scan Error:', error)
+      show('Failed to analyze code with Gemini', 'error')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleApplyFix = () => {
+    if (!suggestion || !editorRef.current) return
+    const model = editorRef.current.getModel()
+    let injection = ''
+    let insertLine = 1
+
+    if (suggestion.type === 'function') {
+      injection = `\nfunction ${suggestion.name}() {\n  return;\n}\n`
+      insertLine = 1
+    } else {
+      // Smart injection for variables
+      if (language === 'java') {
+        injection = `        int ${suggestion.name} = 0;\n`
+        // Find current method start
+        const pos = editorRef.current.getPosition()
+        let found = false
+        for (let i = pos.lineNumber; i > 0; i--) {
+          const line = model.getLineContent(i)
+          if (line.includes('{')) {
+            insertLine = i + 1
+            found = true
+            break
+          }
+        }
+        if (!found) insertLine = 1
+      } else {
+        injection = `let ${suggestion.name};\n`
+        insertLine = 1
+      }
+    }
+
+    const currentCode = model.getValue()
+    const lines = currentCode.split('\n')
+    lines.splice(insertLine - 1, 0, injection)
+
+    sendCode(lines.join('\n'))
+    setSuggestion(null)
   }
 
   useEffect(() => {
     const mgr = cursorMgrRef.current
     if (!mgr || !editorRef.current) return
     Object.values(cursors || {}).forEach((c) =>
-      mgr.upsert({ 
-        userId: c.userId, 
-        username: c.username, 
-        color: (c as any).color, 
-        position: c.position 
+      mgr.upsert({
+        userId: c.userId,
+        username: c.username,
+        color: (c as any).color,
+        position: c.position
       })
     )
   }, [cursors])
@@ -109,7 +250,7 @@ export default function RoomEditor() {
       id,
       name: u.username,
       color: getUserColor(id),
-      status: Array.isArray(typingUsers) && typingUsers.includes(id) ? 'typing' : 'online' // Fixed
+      status: typingUsers[id]?.isTyping ? 'typing' : 'online'
     }))
     setLocalUsers(mapped)
   }, [users, typingUsers])
@@ -175,21 +316,22 @@ export default function RoomEditor() {
 
   // --- Receive shared output ---
   useEffect(() => {
-    if (!window.socket) return
+    const socket = (window as any).socket
+    if (!socket) return
     const handleCodeOutput = (data: { username: string; language: string; output: string; timestamp: string }) => {
       setOutputLog((prev) => [
         ...prev,
-        { 
-          username: data.username, 
-          language: data.language, 
-          output: data.output, 
-          timestamp: data.timestamp 
+        {
+          username: data.username,
+          language: data.language,
+          output: data.output,
+          timestamp: data.timestamp
         },
       ])
     }
 
-    window.socket.on('code:output', handleCodeOutput)
-    return () => window.socket.off('code:output', handleCodeOutput)
+    socket.on('code:output', handleCodeOutput)
+    return () => socket.off('code:output', handleCodeOutput)
   }, [])
 
   // --- Resize layout (editor <-> terminal) ---
@@ -234,20 +376,54 @@ export default function RoomEditor() {
     fetchSavedFiles()
   }, [showSavedFiles])
 
+  // Helper function to get file extension based on language
+  const getFileExtension = (lang: string): string => {
+    const extensionMap: { [key: string]: string } = {
+      javascript: '.js',
+      python: '.py',
+      java: '.java',
+      cpp: '.cpp',
+      c: '.c',
+      html: '.html',
+      css: '.css',
+      typescript: '.ts',
+      plaintext: '.txt'
+    }
+    return extensionMap[lang] || '.txt'
+  }
+
   const handleAddFile = () => {
-    const newFile = { 
-      id: `file-${Date.now()}`, 
-      name: `newFile${files.length + 1}.txt`, 
-      language: 'plaintext' 
+    setShowCreateFileModal(true)
+    setNewFileName('')
+    setNewFileLanguage('javascript')
+  }
+
+  const handleCreateFile = () => {
+    if (!newFileName.trim()) return
+
+    const extension = getFileExtension(newFileLanguage)
+    const fileName = newFileName.trim().endsWith(extension)
+      ? newFileName.trim()
+      : newFileName.trim() + extension
+
+    const newFile = {
+      id: `file-${Date.now()}`,
+      name: fileName,
+      language: newFileLanguage
     }
     setFiles((prev) => [...prev, newFile])
     setActiveFile(newFile.id)
+    setShowCreateFileModal(false)
+    setNewFileName('')
   }
 
   const handleRemoveFile = (id: string) => {
-    if (files.length === 1) return
-    setFiles((prev) => prev.filter((f) => f.id !== id))
-    if (activeFile === id) setActiveFile(files[0].id)
+    const newFiles = files.filter((f) => f.id !== id)
+    setFiles(newFiles)
+    if (activeFile === id) {
+      if (newFiles.length > 0) setActiveFile(newFiles[0].id)
+      else setActiveFile('')
+    }
   }
 
   function getUserColor(id: string) {
@@ -274,6 +450,18 @@ export default function RoomEditor() {
   const handleLanguageChange = (newLanguage: string) => {
     changeLanguage(newLanguage)
     setShowLanguageDropdown(false)
+  }
+
+  const handleCopyRoomId = async () => {
+    if (!roomId) return
+    try {
+      await navigator.clipboard.writeText(roomId)
+      setShowCopiedTooltip(true)
+      setTimeout(() => setShowCopiedTooltip(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy Room ID:', err)
+      show('Failed to copy Room ID', 'error')
+    }
   }
 
   const languages = [
@@ -316,15 +504,17 @@ export default function RoomEditor() {
             to="/rooms"
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
           >
-            <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all">
-              <i className="fa-solid fa-chevron-left text-sm"></i>
+            <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all overflow-hidden p-1.5">
+              <img src={backLogo} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" alt="Back" />
             </div>
             <span className="text-sm font-medium hidden md:inline">Back to Rooms</span>
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <i className="fa-solid fa-code text-white text-lg"></i>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-[2px] shadow-lg shadow-indigo-500/30">
+              <div className="w-full h-full bg-gray-900 rounded-[10px] overflow-hidden flex items-center justify-center">
+                <img src={logo} alt="CollabCode Logo" className="w-full h-full object-cover" />
+              </div>
             </div>
             <div>
               <h1 className="text-white font-bold text-lg">CollabCode</h1>
@@ -334,6 +524,28 @@ export default function RoomEditor() {
                 <span className="text-gray-600">•</span>
                 <span className="text-green-400 font-medium">{isConnected ? 'Live' : 'Connecting...'}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Room ID Display with Copy Button */}
+          <div className="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2">
+            <i className="fa-solid fa-hashtag text-gray-500 text-xs"></i>
+            <span className="text-gray-300 font-mono text-sm font-medium tracking-wider">
+              {roomId}
+            </span>
+            <div className="relative">
+              <button
+                onClick={handleCopyRoomId}
+                className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-indigo-400 transition-colors"
+                title="Copy Room ID"
+              >
+                <i className="fa-solid fa-copy text-xs"></i>
+              </button>
+              {showCopiedTooltip && (
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                  Copied!
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -371,11 +583,10 @@ export default function RoomEditor() {
                     <button
                       key={lang.key}
                       onClick={() => handleLanguageChange(lang.key)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                        language === lang.key
-                          ? 'bg-indigo-500/10 text-indigo-400'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
-                      }`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${language === lang.key
+                        ? 'bg-indigo-500/10 text-indigo-400'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                        }`}
                     >
                       <i className={`${lang.icon} w-5 text-center`}></i>
                       <span className="flex-1 text-left">{lang.label}</span>
@@ -386,6 +597,24 @@ export default function RoomEditor() {
               </div>
             )}
           </div>
+
+          {/* Gemini Scan Button */}
+          <button
+            onClick={handleDeepScan}
+            disabled={isAnalyzing}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-200 ${isAnalyzing
+              ? 'bg-slate-700/50 border-slate-600 text-slate-400 cursor-not-allowed'
+              : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30 hover:border-indigo-400'
+              }`}
+            title="Analyze Entire File with Gemini"
+          >
+            {isAnalyzing ? (
+              <i className="fa-solid fa-spinner fa-spin"></i>
+            ) : (
+              <i className="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+            )}
+            <span className="text-sm font-medium">Scan with Gemini</span>
+          </button>
 
           {/* Run Button */}
           <button
@@ -418,25 +647,23 @@ export default function RoomEditor() {
               <div
                 key={f.id}
                 onClick={() => setActiveFile(f.id)}
-                className={`group flex items-center gap-2 px-4 py-3 text-sm rounded-t-lg cursor-pointer transition-all min-w-[120px] ${
-                  activeFile === f.id
-                    ? 'bg-gray-800 text-indigo-400 font-medium border-t border-x border-gray-700'
-                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
-                }`}
+                className={`group flex items-center gap-2 px-4 py-3 text-sm rounded-t-lg cursor-pointer transition-all min-w-[120px] ${activeFile === f.id
+                  ? 'bg-gray-800 text-indigo-400 font-medium border-t border-x border-gray-700'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                  }`}
               >
                 <i className={`fa-regular fa-file-code ${activeFile === f.id ? 'text-indigo-400' : 'text-gray-600'}`}></i>
                 <span className="truncate flex-1">{f.name}</span>
-                {files.length > 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveFile(f.id)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 hover:text-red-400 transition-all"
-                  >
-                    <i className="fa-solid fa-xmark text-xs"></i>
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemoveFile(f.id)
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors mx-1"
+                  title="Close file"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
               </div>
             ))}
             <button
@@ -456,7 +683,22 @@ export default function RoomEditor() {
               language={language}
               value={code || ''}
               onMount={onEditorMount}
-              onChange={(val) => sendCode(val || '')}
+              onChange={(val) => {
+                sendCode(val || '')
+
+                // Emit typing indicator
+                sendTyping(true)
+
+                // Clear existing timeout
+                if (typingTimeoutRef.current) {
+                  clearTimeout(typingTimeoutRef.current)
+                }
+
+                // Stop typing after 2 seconds of inactivity
+                typingTimeoutRef.current = setTimeout(() => {
+                  sendTyping(false)
+                }, 2000)
+              }}
               options={{
                 fontSize: 14,
                 fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
@@ -467,6 +709,46 @@ export default function RoomEditor() {
                 scrollBeyondLastLine: false,
               }}
             />
+
+            {/* Quick Fix Suggestion */}
+            {suggestion && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: suggestion.pos.x,
+                  top: suggestion.pos.y - 40,
+                  zIndex: 100
+                }}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+              >
+                <button
+                  onClick={handleApplyFix}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 border border-indigo-400 group whitespace-nowrap"
+                >
+                  <i className="fa-solid fa-wand-magic-sparkles text-indigo-200 group-hover:scale-110 transition-transform"></i>
+                  {suggestion.type === 'function' ? `Create function ${suggestion.name}()` : `Declare variable ${suggestion.name}`}
+                </button>
+              </div>
+            )}
+
+            {/* Typing Indicator */}
+            {Object.values(typingUsers).filter(u => (u as any).isTyping).length > 0 && (
+              <div className="absolute bottom-2 left-4 text-xs text-gray-400 flex items-center gap-2 bg-gray-900/90 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-gray-800">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+                <span>
+                  {(() => {
+                    const typing = Object.values(typingUsers).filter(u => u.isTyping)
+                    if (typing.length === 1) return `${typing[0].username} is typing...`
+                    if (typing.length === 2) return `${typing[0].username} and ${typing[1].username} are typing...`
+                    return `${typing[0].username}, ${typing[1].username}, and ${typing.length - 2} ${typing.length - 2 === 1 ? 'other' : 'others'} are typing...`
+                  })()}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Resizer */}
@@ -483,11 +765,10 @@ export default function RoomEditor() {
             <div className="flex items-center border-b border-gray-800 px-4">
               <button
                 onClick={() => setActiveTab('output')}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'output'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-300'
-                }`}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'output'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  }`}
               >
                 <i className="fa-solid fa-terminal mr-2"></i>
                 Output
@@ -499,22 +780,20 @@ export default function RoomEditor() {
               </button>
               <button
                 onClick={() => setActiveTab('input')}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'input'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-300'
-                }`}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'input'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  }`}
               >
                 <i className="fa-solid fa-keyboard mr-2"></i>
                 Input
               </button>
               <button
                 onClick={() => setActiveTab('debug')}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'debug'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-300'
-                }`}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debug'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  }`}
               >
                 <i className="fa-solid fa-bug mr-2"></i>
                 Debug
@@ -572,11 +851,10 @@ export default function RoomEditor() {
           <div className="flex bg-gray-950 p-2 border-b border-gray-800">
             <button
               onClick={() => setActiveSidebarTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${
-                activeSidebarTab === 'chat'
-                  ? 'bg-gray-800 text-indigo-400'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'chat'
+                ? 'bg-gray-800 text-indigo-400'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                }`}
             >
               <i className="fa-solid fa-comments"></i>
               <span className="text-sm font-medium">Chat</span>
@@ -588,11 +866,10 @@ export default function RoomEditor() {
             </button>
             <button
               onClick={() => setActiveSidebarTab('participants')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${
-                activeSidebarTab === 'participants'
-                  ? 'bg-gray-800 text-indigo-400'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'participants'
+                ? 'bg-gray-800 text-indigo-400'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                }`}
             >
               <i className="fa-solid fa-users"></i>
               <span className="text-sm font-medium">Users</span>
@@ -600,11 +877,10 @@ export default function RoomEditor() {
             </button>
             <button
               onClick={() => setActiveSidebarTab('history')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${
-                activeSidebarTab === 'history'
-                  ? 'bg-gray-800 text-indigo-400'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'history'
+                ? 'bg-gray-800 text-indigo-400'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                }`}
             >
               <i className="fa-solid fa-history"></i>
               <span className="text-sm font-medium">History</span>
@@ -646,11 +922,10 @@ export default function RoomEditor() {
                               </div>
                             )}
                             <div
-                              className={`px-4 py-3 rounded-2xl ${
-                                isMe
-                                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
-                                  : 'bg-gray-800 text-gray-200 rounded-bl-none'
-                              }`}
+                              className={`px-4 py-3 rounded-2xl ${isMe
+                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
+                                : 'bg-gray-800 text-gray-200 rounded-bl-none'
+                                }`}
                             >
                               {m.message}
                             </div>
@@ -705,9 +980,8 @@ export default function RoomEditor() {
                       >
                         {user.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${
-                        user.status === 'typing' ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'
-                      }`}></div>
+                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${user.status === 'typing' ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'
+                        }`}></div>
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-gray-200">{user.name}</div>
@@ -852,6 +1126,85 @@ export default function RoomEditor() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create File Modal */}
+      {showCreateFileModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-gray-800 bg-gray-950">
+              <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <i className="fa-solid fa-file-circle-plus text-white"></i>
+                </div>
+                Create New File
+              </h2>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Language Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Language
+                </label>
+                <select
+                  value={newFileLanguage}
+                  onChange={(e) => setNewFileLanguage(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.key} value={lang.key}>
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filename Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  File Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newFileName}
+                    onChange={(e) => setNewFileName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') handleCreateFile()
+                    }}
+                    placeholder={`e.g., main${getFileExtension(newFileLanguage)}`}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder-gray-500"
+                    autoFocus
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 bg-gray-900 px-2 py-1 rounded">
+                    {getFileExtension(newFileLanguage)}
+                  </div>
+                </div>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Extension will be added automatically if not provided
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowCreateFileModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateFile}
+                  disabled={!newFileName.trim()}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/25"
+                >
+                  Create File
+                </button>
+              </div>
             </div>
           </div>
         </div>

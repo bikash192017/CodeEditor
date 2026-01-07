@@ -1,0 +1,27 @@
+# Render Blueprint for CodeEditor Backend
+# This file is optional but makes deployment easier
+
+services:
+  - type: web
+    name: codeeditor-backend
+    runtime: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: server
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URLS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

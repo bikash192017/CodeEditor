@@ -34,7 +34,7 @@ export function registerSocketHandlers(io: Server) {
     socket.on('room:join', async ({ roomId }) => {
       if (!roomId) return
       socket.join(roomId)
-      ;(socket as any).roomId = roomId
+        ; (socket as any).roomId = roomId
       console.log(`👋 ${socket.username} joined ${roomId}`)
 
       // Initialize room state if missing
