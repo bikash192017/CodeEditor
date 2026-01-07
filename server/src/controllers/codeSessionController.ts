@@ -80,8 +80,13 @@ export const updateCodeSession = async (req: AuthRequest, res: Response): Promis
       return
     }
 
-    session.code = code
-    await session.save()
+    // Add snapshot instead of directly setting code
+    session.snapshots.push({
+      code,
+      timestamp: new Date(),
+      userId: req.user?.id as any,
+    });
+    await session.save();
 
     res.json({
       success: true,

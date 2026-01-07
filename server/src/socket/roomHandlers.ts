@@ -30,7 +30,7 @@ export const authenticateSocket = async (socket: AuthenticatedSocket, next: any)
       return next(new Error('Authentication error: User not found'));
     }
 
-    socket.userId = user._id.toString();
+    socket.userId = (user._id as any).toString();
     socket.username = user.username;
 
     next();

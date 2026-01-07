@@ -53,7 +53,7 @@ export const protect = async (
 
     // Attach user info to request
     req.user = {
-      id: user._id.toString(),
+      id: (user._id as any).toString(),
       username: user.username,
       email: user.email,
       avatar: user.avatar,

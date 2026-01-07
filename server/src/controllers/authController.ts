@@ -31,7 +31,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, salt)
 
     const user = await User.create({ username, email, password: hashedPassword })
-    const token = generateToken(user._id.toString())
+    const token = generateToken((user._id as any).toString())
 
     res.status(201).json({
       success: true,
@@ -73,7 +73,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    const token = generateToken(user._id.toString())
+    const token = generateToken((user._id as any).toString())
 
     res.status(200).json({
       success: true,

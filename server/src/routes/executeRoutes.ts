@@ -3,7 +3,7 @@ import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 import { ExecutionHistory } from '../models/ExecutionHistory.js'
-import { protect } from '../middleware/auth.js'
+import { protect, AuthRequest } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -12,7 +12,7 @@ const router = express.Router()
  * @desc    Execute code using Piston API (does NOT auto-save)
  * @access  Private
  */
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, async (req: AuthRequest, res) => {
   try {
     const { language, code, stdin, roomId } = req.body
 
@@ -50,12 +50,12 @@ router.post('/', protect, async (req, res) => {
       runtime === 'java'
         ? 'Main.java'
         : runtime === 'cpp'
-        ? 'main.cpp'
-        : runtime === 'c'
-        ? 'main.c'
-        : runtime === 'typescript'
-        ? 'main.ts'
-        : 'main.js'
+          ? 'main.cpp'
+          : runtime === 'c'
+            ? 'main.c'
+            : runtime === 'typescript'
+              ? 'main.ts'
+              : 'main.js'
 
     const EXECUTION_API = 'https://emkc.org/api/v2/piston/execute'
 
@@ -99,7 +99,7 @@ router.post('/', protect, async (req, res) => {
  * @desc    Save executed code to file + database (only on confirmation)
  * @access  Private
  */
-router.post('/save', protect, async (req, res) => {
+router.post('/save', protect, async (req: AuthRequest, res) => {
   try {
     const { language, code, output, roomId } = req.body
 
@@ -161,7 +161,7 @@ router.post('/save', protect, async (req, res) => {
  * @desc    Fetch saved executions (if user saved them)
  * @access  Private
  */
-router.get('/history', protect, async (req, res) => {
+router.get('/history', protect, async (req: AuthRequest, res) => {
   try {
     const history = await ExecutionHistory.find({ userId: req.user?.id })
       .sort({ createdAt: -1 })
@@ -185,7 +185,7 @@ router.get('/history', protect, async (req, res) => {
  * @desc    Get all saved executions in a specific room
  * @access  Private
  */
-router.get('/history/:roomId', protect, async (req, res) => {
+router.get('/history/:roomId', protect, async (req: AuthRequest, res) => {
   try {
     const { roomId } = req.params
     const history = await ExecutionHistory.find({ roomId })
@@ -210,7 +210,7 @@ router.get('/history/:roomId', protect, async (req, res) => {
  * @desc    Clear all saved executions for a user
  * @access  Private
  */
-router.delete('/history', protect, async (req, res) => {
+router.delete('/history', protect, async (req: AuthRequest, res) => {
   try {
     await ExecutionHistory.deleteMany({ userId: req.user?.id })
     res.status(200).json({
@@ -229,7 +229,7 @@ router.delete('/history', protect, async (req, res) => {
  * @desc    Delete a specific saved execution by ID
  * @access  Private
  */
-router.delete('/history/:id', protect, async (req, res) => {
+router.delete('/history/:id', protect, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params
     const result = await ExecutionHistory.findOneAndDelete({

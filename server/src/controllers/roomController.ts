@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { Room } from '../models';
 import { AuthRequest } from '../middleware/auth';
+import { validateRoomIdFormat, normalizeRoomId } from '../utils/roomIdGenerator';
 
 // ✅ Create room
 export const createRoom = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -11,18 +12,34 @@ export const createRoom = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const { name, language, isPublic } = req.body;
+    console.log('🔵 Creating room with isPublic:', isPublic, 'type:', typeof isPublic);
 
     const room = await Room.create({
       name: name || 'Untitled Room',
       ownerId: req.user.id,
       language: language || 'javascript',
-      isPublic: isPublic || false,
+      isPublic: isPublic === true, // Explicitly convert to boolean, defaults to false
+      users: [
+        {
+          userId: req.user.id,
+          userName: req.user.username || 'Unknown',
+          role: 'owner',
+          joinedAt: new Date(),
+        },
+      ],
     });
+
+    // Generate shareable link
+    const shareableLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/rooms/${room.roomId}`;
 
     res.status(201).json({
       success: true,
       message: 'Room created successfully',
-      data: { room },
+      data: {
+        room,
+        roomId: room.roomId,
+        shareableLink
+      },
     });
   } catch (error: any) {
     console.error('❌ Error creating room:', error);
@@ -72,6 +89,8 @@ export const getRoomById = async (req: AuthRequest, res: Response): Promise<void
       res.status(404).json({ success: false, message: 'Room not found' });
       return;
     }
+
+    console.log('🔍 Room details:', { roomId: room.roomId, name: room.name, isPublic: room.isPublic });
 
     if (!room.isPublic && req.user?.id !== room.ownerId.toString()) {
       const isCollab = room.collaborators.some(
@@ -187,32 +206,67 @@ export const joinRoom = async (req: AuthRequest, res: Response): Promise<void> =
     }
 
     const { roomId } = req.params;
-    const room = await Room.findOne({ roomId });
+
+    // Validate Room ID format
+    const normalizedRoomId = normalizeRoomId(roomId);
+    if (!validateRoomIdFormat(normalizedRoomId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid room ID format. Expected format: ABC-123'
+      });
+      return;
+    }
+
+    const room = await Room.findOne({ roomId: normalizedRoomId });
     if (!room) {
       res.status(404).json({ success: false, message: 'Room not found' });
       return;
     }
 
-    const isOwner = room.ownerId.toString() === req.user.id;
-    const isCollab = room.collaborators.some((id) => id.toString() === req.user.id);
-
-    if (!room.isPublic && !isOwner && !isCollab) {
-      res.status(403).json({ success: false, message: 'Access denied to private room' });
+    // Check if room is active
+    if (!room.isActive) {
+      res.status(403).json({ success: false, message: 'Room is no longer active' });
       return;
     }
 
-    if (isOwner || isCollab) {
+    const isOwner = room.ownerId.toString() === req.user!.id;
+    const isCollab = room.collaborators.some((id) => id.toString() === req.user!.id);
+
+    // Note: Anyone with the Room ID can join (public or private)
+    // The isPublic flag only affects dashboard visibility, not join access
+
+    // Check if user is already in the room
+    const existingUser = room.users.find(u => u.userId.toString() === req.user!.id);
+    if (existingUser) {
       res.json({
         success: true,
-        message: isOwner
-          ? 'You are the room owner'
-          : 'Already a collaborator (rejoined successfully)',
+        message: 'Already in room (rejoined successfully)',
         data: { room },
       });
       return;
     }
 
-    room.collaborators.push(req.user.id as any);
+    // Check room capacity
+    if (room.users.length >= room.maxUsers) {
+      res.status(403).json({
+        success: false,
+        message: `Room is full (${room.users.length}/${room.maxUsers} users)`
+      });
+      return;
+    }
+
+    // Add user to room
+    if (!isOwner && !isCollab) {
+      room.collaborators.push(req.user!.id as any);
+    }
+
+    room.users.push({
+      userId: req.user!.id as any,
+      userName: req.user!.username || 'Unknown',
+      role: isOwner ? 'owner' : 'collaborator',
+      joinedAt: new Date(),
+    });
+
     await room.save();
 
     const updated = await Room.findById(room._id)
@@ -252,7 +306,7 @@ export const leaveRoom = async (req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
-    const index = room.collaborators.findIndex((id) => id.toString() === req.user.id);
+    const index = room.collaborators.findIndex((id) => id.toString() === req.user!.id);
     if (index === -1) {
       res.status(400).json({ success: false, message: 'You are not a collaborator' });
       return;
