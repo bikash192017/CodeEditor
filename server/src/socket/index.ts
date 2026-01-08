@@ -17,7 +17,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
       origin: allowedOrigins,
       credentials: true,
     },
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
   });
 
   console.log('⚡ Socket.IO initialized with allowed origins:', allowedOrigins);
