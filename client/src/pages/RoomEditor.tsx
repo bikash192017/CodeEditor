@@ -36,6 +36,7 @@ export default function RoomEditor() {
   const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
   const [suggestion, setSuggestion] = useState<{ name: string; type: 'function' | 'variable'; pos: { x: number; y: number } } | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const {
     code,
@@ -498,8 +499,8 @@ export default function RoomEditor() {
   return (
     <div className="h-screen w-full bg-[#0f172a] text-gray-300 flex flex-col overflow-hidden font-sans">
       {/* Header - Professional Design */}
-      <header className="h-16 bg-gradient-to-r from-gray-900 to-gray-900 border-b border-gray-800 flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
+      <header className="h-16 bg-gradient-to-r from-gray-900 to-gray-900 border-b border-gray-800 flex items-center justify-between px-2 sm:px-6 shrink-0 z-20 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             to="/rooms"
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
@@ -517,20 +518,20 @@ export default function RoomEditor() {
               </div>
             </div>
             <div>
-              <h1 className="text-white font-bold text-lg">CollabCode</h1>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span>{roomName}</span>
-                <span className="text-gray-600">•</span>
-                <span className="text-green-400 font-medium">{isConnected ? 'Live' : 'Connecting...'}</span>
+              <h1 className="text-white font-bold text-lg hidden sm:block">CollabCode</h1>
+              <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-400">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 shrink-0 animate-pulse"></span>
+                <span className="truncate max-w-[60px] sm:max-w-[120px]">{roomName}</span>
+                <span className="text-gray-600 hidden sm:inline">•</span>
+                <span className="text-green-400 font-medium hidden sm:inline">{isConnected ? 'Live' : 'Connecting...'}</span>
               </div>
             </div>
           </div>
 
           {/* Room ID Display with Copy Button */}
-          <div className="flex items-center gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2">
-            <i className="fa-solid fa-hashtag text-gray-500 text-xs"></i>
-            <span className="text-gray-300 font-mono text-sm font-medium tracking-wider">
+          <div className="flex items-center gap-1 sm:gap-2 bg-gray-800/50 border border-gray-700 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2">
+            <i className="fa-solid fa-hashtag text-gray-500 text-[10px] sm:text-xs hidden sm:block"></i>
+            <span className="text-gray-300 font-mono text-xs sm:text-sm font-medium tracking-wider">
               {roomId}
             </span>
             <div className="relative">
@@ -550,15 +551,15 @@ export default function RoomEditor() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0 pl-2">
           {/* Room Info */}
-          <div className="bg-gray-900/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-800 flex items-center gap-2">
+          <div className="hidden sm:flex bg-gray-900/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-800 items-center gap-2">
             <i className="fa-solid fa-users text-green-400"></i>
             <span className="text-sm">{localUsers.length} Online</span>
           </div>
 
           {/* Share Button */}
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 transition-all">
+          <button className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 transition-all">
             <i className="fa-solid fa-share"></i>
             <span className="text-sm font-medium">Share</span>
           </button>
@@ -567,13 +568,13 @@ export default function RoomEditor() {
           <div className="relative" ref={languageDropdownRef}>
             <button
               onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm text-gray-300 hover:border-indigo-500 transition-all min-w-[140px] justify-between"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-xs sm:text-sm text-gray-300 hover:border-indigo-500 transition-all min-w-[70px] sm:min-w-[140px] justify-between"
             >
               <div className="flex items-center gap-2">
                 <i className={`${currentLanguage.icon} text-indigo-400`}></i>
-                <span>{currentLanguage.label}</span>
+                <span className="hidden sm:inline">{currentLanguage.label}</span>
               </div>
-              <i className={`fa-solid fa-chevron-down text-xs transition-transform ${showLanguageDropdown ? 'rotate-180' : ''}`}></i>
+              <i className={`fa-solid fa-chevron-down text-[10px] sm:text-xs transition-transform ${showLanguageDropdown ? 'rotate-180' : ''}`}></i>
             </button>
 
             {showLanguageDropdown && (
@@ -602,37 +603,46 @@ export default function RoomEditor() {
           <button
             onClick={handleDeepScan}
             disabled={isAnalyzing}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-200 ${isAnalyzing
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg border transition-all duration-200 ${isAnalyzing
               ? 'bg-slate-700/50 border-slate-600 text-slate-400 cursor-not-allowed'
               : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30 hover:border-indigo-400'
               }`}
             title="Analyze Entire File with Gemini"
           >
             {isAnalyzing ? (
-              <i className="fa-solid fa-spinner fa-spin"></i>
+              <i className="fa-solid fa-spinner fa-spin text-xs sm:text-base"></i>
             ) : (
-              <i className="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+              <i className="fa-solid fa-wand-magic-sparkles text-indigo-400 text-xs sm:text-base"></i>
             )}
-            <span className="text-sm font-medium">Scan with Gemini</span>
+            <span className="hidden sm:inline text-sm font-medium">Scan</span>
           </button>
 
           {/* Run Button */}
           <button
             onClick={handleRunCode}
             disabled={isRunning}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunning ? (
               <>
-                <i className="fa-solid fa-circle-notch animate-spin"></i>
-                <span>Running...</span>
+                <i className="fa-solid fa-circle-notch animate-spin text-xs sm:text-base"></i>
+                <span className="hidden sm:inline">Running...</span>
               </>
             ) : (
               <>
-                <i className="fa-solid fa-play"></i>
-                <span>Run Code</span>
+                <i className="fa-solid fa-play text-xs sm:text-base"></i>
+                <span className="hidden sm:inline">Run Code</span>
+                <span className="sm:hidden text-xs">Run</span>
               </>
             )}
+          </button>
+
+          {/* Mobile Sidebar Toggle Button */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            <i className={`fa-solid ${isSidebarOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
           </button>
         </div>
       </header>
@@ -846,7 +856,14 @@ export default function RoomEditor() {
         </div>
 
         {/* Right Panel - Sidebar */}
-        <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col">
+        {/* Mobile Overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-gray-900 border-l border-gray-800 flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
           {/* Sidebar Tabs */}
           <div className="flex bg-gray-950 p-2 border-b border-gray-800">
             <button
@@ -1102,7 +1119,7 @@ export default function RoomEditor() {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
                           <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider flex items-center gap-2">
                             <i className="fa-solid fa-code"></i>

@@ -171,10 +171,10 @@ export default function Rooms() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
       <div className="mx-auto max-w-6xl">
         {/* Added: Top bar with page title and a11y-friendly Logout button */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-[2px] shadow-lg shadow-indigo-500/30">
               <div className="w-full h-full bg-slate-900 rounded-[10px] overflow-hidden flex items-center justify-center">
@@ -182,7 +182,7 @@ export default function Rooms() {
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">CollabCode</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">CollabCode</h1>
               <p className="text-slate-400 text-sm">
                 {greeting}{user ? `, ${user.username}` : ''}. Select a room to start coding.
               </p>
@@ -190,7 +190,7 @@ export default function Rooms() {
           </div>
           <button
             onClick={handleLogout}
-            className="inline-flex items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
             aria-label="Log out"
           >
             {/* Added: Logout text button */}
@@ -199,10 +199,10 @@ export default function Rooms() {
         </div>
 
         {/* Added: Actions row with Create New Room button */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4">
           <button
             onClick={() => setIsJoinOpen(true)}
-            className="rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 flex items-center gap-2"
+            className="rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 flex items-center justify-center gap-2"
           >
             <i className="fa-solid fa-right-to-bracket"></i>
             Join Room
