@@ -66,6 +66,7 @@ export default function RoomEditor() {
   const languageDropdownRef = useRef<HTMLDivElement>(null)
   const currentUser = useAuthStore((s) => s.user)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isTypingRef = useRef<boolean>(false)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -740,8 +741,11 @@ export default function RoomEditor() {
               onChange={(val) => {
                 sendCode(val || '')
 
-                // Emit typing indicator
-                sendTyping(true)
+                // Emit typing indicator ONLY if we aren't already typing
+                if (!isTypingRef.current) {
+                  isTypingRef.current = true
+                  sendTyping(true)
+                }
 
                 // Clear existing timeout
                 if (typingTimeoutRef.current) {
@@ -750,6 +754,7 @@ export default function RoomEditor() {
 
                 // Stop typing after 2 seconds of inactivity
                 typingTimeoutRef.current = setTimeout(() => {
+                  isTypingRef.current = false
                   sendTyping(false)
                 }, 2000)
               }}
@@ -787,7 +792,7 @@ export default function RoomEditor() {
 
             {/* Typing Indicator */}
             {Object.values(typingUsers).filter(u => (u as any).isTyping).length > 0 && (
-              <div className="absolute bottom-2 left-4 text-xs text-gray-400 flex items-center gap-2 bg-gray-900/90 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-gray-800">
+              <div className="absolute bottom-2 left-4 z-[9999] pointer-events-none text-xs text-gray-400 flex items-center gap-2 bg-gray-900/90 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-gray-800 shadow-xl">
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                   <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>

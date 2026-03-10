@@ -195,6 +195,7 @@ export function registerSocketHandlers(io: Server) {
 
     // --- Typing Indicator ---
     socket.on('user:typing', ({ roomId, isTyping }) => {
+      console.log(`💬 RECEIVED TYPING from ${socket.username} in ${roomId}: isTyping=${isTyping}`)
       if (!roomId) return
       socket.to(roomId).emit('user:typing', {
         roomId,
@@ -202,6 +203,7 @@ export function registerSocketHandlers(io: Server) {
         username: socket.username,
         isTyping,
       })
+      console.log(`📢 BROADCASTED TYPING to ${roomId}`)
     })
 
     // --- Disconnect ---

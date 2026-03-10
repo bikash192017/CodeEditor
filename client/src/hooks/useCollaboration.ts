@@ -96,21 +96,16 @@ export function useCollaboration(roomId: string | undefined) {
 
     // Typing indicators
     const onUserTyping = (p: { roomId: string; userId: string; username: string; isTyping: boolean }) => {
-      setTypingUsers(prev => ({
-        ...prev,
-        [p.userId]: { userId: p.userId, username: p.username, isTyping: p.isTyping },
-      }))
-
-      // Auto-remove typing indicator after timeout
-      if (p.isTyping) {
-        setTimeout(() => {
-          setTypingUsers(prev => {
-            const n = { ...prev }
-            delete n[p.userId]
-            return n
-          })
-        }, 3000)
-      }
+      console.log('🔴 TYPING EVENT RECEIVED:', p)
+      setTypingUsers(prev => {
+        const next = { ...prev }
+        if (p.isTyping) {
+          next[p.userId] = { userId: p.userId, username: p.username, isTyping: true }
+        } else {
+          delete next[p.userId]
+        }
+        return next
+      })
     }
 
     // Register all listeners
@@ -175,11 +170,12 @@ export function useCollaboration(roomId: string | undefined) {
     [socket, roomId],
   )
 
-  const sendTyping = useCallback(
-    (isTyping: boolean) => {
-      if (!socket || !roomId) return
-      socket.emit('user:typing', { roomId, isTyping })
-    },
+    const sendTyping = useCallback(
+      (isTyping: boolean) => {
+        if (!socket || !roomId) return
+        console.log(`📤 EMITTING TYPING: isTyping=${isTyping}`)
+        socket.emit('user:typing', { roomId, isTyping })
+      },
     [socket, roomId],
   )
 
