@@ -544,7 +544,7 @@ export default function RoomEditor() {
   return (
     <div className="h-screen w-full bg-[#0f172a] text-gray-300 flex flex-col overflow-hidden font-sans">
       {/* Header - Professional Design */}
-      <header className="h-16 bg-gradient-to-r from-gray-900 to-gray-900 border-b border-gray-800 flex items-center justify-between px-2 sm:px-6 shrink-0 z-20 overflow-x-auto no-scrollbar">
+      <header className="h-16 bg-gradient-to-r from-gray-900 to-gray-900 border-b border-gray-800 flex items-center justify-between px-2 sm:px-6 shrink-0 z-30 overflow-visible">
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             to="/rooms"
