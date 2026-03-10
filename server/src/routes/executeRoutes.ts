@@ -1,9 +1,9 @@
 import express from 'express'
-import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 import { ExecutionHistory } from '../models/ExecutionHistory.js'
 import { protect, AuthRequest } from '../middleware/auth.js'
+import { runCode } from '../utils/codeRunner.js'
 
 const router = express.Router()
 
@@ -57,29 +57,17 @@ router.post('/', protect, async (req: AuthRequest, res) => {
               ? 'main.ts'
               : 'main.js'
 
-    const EXECUTION_API = 'https://emkc.org/api/v2/piston/execute'
-
-    // ✅ Execute code through Piston
-    const response = await axios.post(EXECUTION_API, {
-      language: runtime,
-      version,
-      files: [{ name: fileName, content: code }],
-      stdin: stdin || '',
-    })
-
-    const result = response.data
-    const output = result.run?.output?.trim() || ''
-    const stderr = result.run?.stderr?.trim() || ''
-    const time = result.run?.time || null
+    // ✅ Execute code through local runner
+    const result = await runCode(runtime, code, stdin)
 
     // ✅ Return result only (no DB save)
     res.status(200).json({
       success: true,
       message: 'Code executed successfully',
       data: {
-        output: output || stderr || 'No output received.',
-        stderr,
-        time,
+        output: result.output || 'No output received.',
+        stderr: '',
+        time: null,
       },
     })
   } catch (error: any) {

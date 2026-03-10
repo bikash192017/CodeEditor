@@ -282,8 +282,7 @@ export default function RoomEditor() {
         const result = data.data.output || 'No output.'
         const timestamp = new Date().toLocaleTimeString()
 
-        setOutputLog((prev) => [
-          ...prev,
+        setOutputLog([
           {
             username: currentUser?.username || 'You',
             language,
@@ -292,24 +291,7 @@ export default function RoomEditor() {
           },
         ])
 
-        const shouldSave = window.confirm('✅ Code executed successfully!\n\nDo you want to save this code as a file?')
-
-        if (shouldSave) {
-          try {
-            await api.post('/execute/save', {
-              language,
-              code,
-              output: result,
-              roomId,
-            })
-            show('Execution saved successfully ✅', 'success')
-          } catch (saveErr) {
-            console.error('Save error:', saveErr)
-            show('Failed to save execution ❌', 'error')
-          }
-        } else {
-          show('Execution discarded 🚫', 'info')
-        }
+        show('Code executed successfully ✅', 'success')
       } else {
         show(`Execution failed: ${data.message}`, 'error')
       }
