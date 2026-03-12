@@ -241,14 +241,23 @@ export default function Rooms() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
-            aria-label="Log out"
-          >
-            {/* Added: Logout text button */}
-            Logout
-          </button>
+          <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-lg bg-[#1e293b] hover:bg-slate-700 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              aria-label="Go to Home"
+            >
+              <i className="fa-solid fa-house"></i>
+              Home
+            </button>
+            <button
+              onClick={handleLogout}
+              className="inline-flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+              aria-label="Log out"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Added: Actions row with Create New Room button */}
