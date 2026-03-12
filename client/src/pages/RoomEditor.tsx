@@ -526,7 +526,7 @@ export default function RoomEditor() {
   return (
     <div className="h-screen w-full bg-[#0f172a] text-gray-300 flex flex-col overflow-hidden font-sans">
       {/* Header - Professional Design */}
-      <header className="h-16 bg-gradient-to-r from-gray-900 to-gray-900 border-b border-gray-800 flex items-center justify-between px-2 sm:px-6 shrink-0 z-30 overflow-visible">
+      <header className="h-16 bg-[#020617] border-b border-[#1e293b] flex items-center justify-between px-2 sm:px-6 shrink-0 z-30 overflow-visible">
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Link
             to="/rooms"
@@ -539,8 +539,8 @@ export default function RoomEditor() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-[2px] shadow-lg shadow-indigo-500/30">
-              <div className="w-full h-full bg-gray-900 rounded-[10px] overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#38bdf8] rounded-xl p-[2px] shadow-lg shadow-[#38bdf8]/30">
+              <div className="w-full h-full bg-[#0f172a] rounded-[10px] overflow-hidden flex items-center justify-center">
                 <img src={logo} alt="CollabCode Logo" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -612,8 +612,8 @@ export default function RoomEditor() {
                       key={lang.key}
                       onClick={() => handleLanguageChange(lang.key)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${language === lang.key
-                        ? 'bg-indigo-500/10 text-indigo-400'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                        ? 'bg-[#38bdf8]/10 text-[#38bdf8]'
+                        : 'text-gray-400 hover:bg-[#1e293b] hover:text-white'
                         }`}
                     >
                       <i className={`${lang.icon} w-5 text-center`}></i>
@@ -648,7 +648,7 @@ export default function RoomEditor() {
           <button
             onClick={handleRunCode}
             disabled={isRunning}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-lg shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 bg-[#38bdf8] hover:bg-sky-400 text-black text-sm font-semibold rounded-lg shadow-lg shadow-[#38bdf8]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRunning ? (
               <>
@@ -679,17 +679,17 @@ export default function RoomEditor() {
         {/* Left Panel - Editor */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* File Tabs */}
-          <div className="flex items-center bg-gray-900 border-b border-gray-800 px-2 pt-2 gap-1 overflow-x-auto">
+          <div className="flex items-center bg-[#020617] border-b border-[#1e293b] px-2 pt-2 gap-1 overflow-x-auto">
             {files.map((f) => (
               <div
                 key={f.id}
                 onClick={() => setActiveFile(f.id)}
                 className={`group flex items-center gap-2 px-4 py-3 text-sm rounded-t-lg cursor-pointer transition-all min-w-[120px] ${activeFile === f.id
-                  ? 'bg-gray-800 text-indigo-400 font-medium border-t border-x border-gray-700'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                  ? 'bg-[#0f172a] text-[#38bdf8] font-medium border-t border-x border-[#1e293b]'
+                  : 'text-gray-500 hover:text-white hover:bg-[#1e293b]'
                   }`}
               >
-                <i className={`fa-regular fa-file-code ${activeFile === f.id ? 'text-indigo-400' : 'text-gray-600'}`}></i>
+                <i className={`fa-regular fa-file-code ${activeFile === f.id ? 'text-[#38bdf8]' : 'text-gray-600'}`}></i>
                 <span className="truncate flex-1">{f.name}</span>
                 <button
                   onClick={(e) => {
@@ -801,20 +801,20 @@ export default function RoomEditor() {
           </div>
 
           {/* Terminal Area */}
-          <div style={{ height: `${100 - editorHeight}%` }} className="flex flex-col bg-gray-900 border-t border-gray-800">
+          <div style={{ height: `${100 - editorHeight}%` }} className="flex flex-col bg-[#0f172a] border-t border-[#1e293b]">
             {/* Terminal Tabs */}
-            <div className="flex items-center border-b border-gray-800 px-4">
+            <div className="flex items-center border-b border-[#1e293b] px-4">
               <button
                 onClick={() => setActiveTab('output')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'output'
-                  ? 'border-indigo-500 text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  ? 'border-[#38bdf8] text-[#38bdf8]'
+                  : 'border-transparent text-gray-500 hover:text-white'
                   }`}
               >
                 <i className="fa-solid fa-terminal mr-2"></i>
                 Output
                 {outputLog.length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-indigo-500/20 text-indigo-300 rounded-full">
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-[#38bdf8]/20 text-[#38bdf8] rounded-full">
                     {outputLog.length}
                   </span>
                 )}
@@ -822,8 +822,8 @@ export default function RoomEditor() {
               <button
                 onClick={() => setActiveTab('input')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'input'
-                  ? 'border-indigo-500 text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  ? 'border-[#38bdf8] text-[#38bdf8]'
+                  : 'border-transparent text-gray-500 hover:text-white'
                   }`}
               >
                 <i className="fa-solid fa-keyboard mr-2"></i>
@@ -832,8 +832,8 @@ export default function RoomEditor() {
               <button
                 onClick={() => setActiveTab('debug')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debug'
-                  ? 'border-indigo-500 text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-300'
+                  ? 'border-[#38bdf8] text-[#38bdf8]'
+                  : 'border-transparent text-gray-500 hover:text-white'
                   }`}
               >
                 <i className="fa-solid fa-bug mr-2"></i>
@@ -894,20 +894,20 @@ export default function RoomEditor() {
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
-        <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-gray-900 border-l border-gray-800 flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
+        <div className={`fixed inset-y-0 right-0 z-50 w-80 bg-[#0f172a] border-l border-[#1e293b] flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
           {/* Sidebar Tabs */}
-          <div className="flex bg-gray-950 p-2 border-b border-gray-800">
+          <div className="flex bg-[#020617] p-2 border-b border-[#1e293b]">
             <button
               onClick={() => setActiveSidebarTab('chat')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'chat'
-                ? 'bg-gray-800 text-indigo-400'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                ? 'bg-[#1e293b] text-[#38bdf8]'
+                : 'text-gray-500 hover:text-white hover:bg-[#1e293b]'
                 }`}
             >
               <i className="fa-solid fa-comments"></i>
               <span className="text-sm font-medium">Chat</span>
               {chat.length > 0 && (
-                <span className="px-1.5 py-0.5 text-xs bg-indigo-500 text-white rounded-full">
+                <span className="px-1.5 py-0.5 text-xs bg-[#38bdf8] text-black rounded-full">
                   {chat.length}
                 </span>
               )}
@@ -915,8 +915,8 @@ export default function RoomEditor() {
             <button
               onClick={() => setActiveSidebarTab('participants')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'participants'
-                ? 'bg-gray-800 text-indigo-400'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                ? 'bg-[#1e293b] text-[#38bdf8]'
+                : 'text-gray-500 hover:text-white hover:bg-[#1e293b]'
                 }`}
             >
               <i className="fa-solid fa-users"></i>
@@ -926,8 +926,8 @@ export default function RoomEditor() {
             <button
               onClick={() => setActiveSidebarTab('history')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition-all ${activeSidebarTab === 'history'
-                ? 'bg-gray-800 text-indigo-400'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'
+                ? 'bg-[#1e293b] text-[#38bdf8]'
+                : 'text-gray-500 hover:text-white hover:bg-[#1e293b]'
                 }`}
             >
               <i className="fa-solid fa-history"></i>
@@ -1006,7 +1006,7 @@ export default function RoomEditor() {
                     <button
                       onClick={handleSendChat}
                       disabled={!chatInput.trim()}
-                      className="absolute right-2 top-2 flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 top-2 flex items-center gap-2 px-4 py-1.5 bg-[#38bdf8] text-black rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="fa-solid fa-paper-plane text-xs"></i>
                       <span>Send</span>

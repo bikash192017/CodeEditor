@@ -224,12 +224,12 @@ export default function Rooms() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6">
+    <div className="min-h-screen bg-[#0f172a] bg-gradient-to-br from-[#020617] to-[#1e3a8a] p-4 sm:p-6">
       <div className="mx-auto max-w-6xl">
         {/* Added: Top bar with page title and a11y-friendly Logout button */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-[2px] shadow-lg shadow-indigo-500/30">
+            <div className="w-12 h-12 bg-[#38bdf8] rounded-xl p-[2px] shadow-lg shadow-[#38bdf8]/30">
               <div className="w-full h-full bg-slate-900 rounded-[10px] overflow-hidden flex items-center justify-center">
                 <img src={logo} alt="CollabCode Logo" className="w-full h-full object-cover" />
               </div>
@@ -255,14 +255,14 @@ export default function Rooms() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4">
           <button
             onClick={() => setIsJoinOpen(true)}
-            className="rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 flex items-center justify-center gap-2"
+            className="rounded-lg bg-[#1e293b] hover:bg-slate-700 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 flex items-center justify-center gap-2"
           >
             <i className="fa-solid fa-right-to-bracket"></i>
             Join Room
           </button>
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="rounded-lg bg-[#38bdf8] hover:bg-sky-400 text-black font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
           >
             Create New Room
           </button>
@@ -285,7 +285,7 @@ export default function Rooms() {
             {rooms.map((room) => (
               <div
                 key={room.roomId}
-                className="backdrop-blur-lg bg-white/10 border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col"
+                className="backdrop-blur-lg bg-[#0f172a]/80 border border-[#1e293b] rounded-2xl p-5 shadow-xl flex flex-col"
               >
                 <div className="mb-3">
                   <div className="flex items-start justify-between">
@@ -309,7 +309,7 @@ export default function Rooms() {
                 <div className="mt-auto">
                   <button
                     onClick={() => handleJoinRoom(room.roomId)}
-                    className="w-full rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                    className="w-full rounded-lg bg-[#38bdf8] hover:bg-sky-400 text-black font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                   >
                     Join
                   </button>
@@ -334,9 +334,9 @@ export default function Rooms() {
             aria-hidden="true"
           />
           {/* Modal panel */}
-          <div className="relative w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/10 rounded-2xl p-6 shadow-2xl">
+          <div className="relative w-full max-w-md backdrop-blur-lg bg-[#0f172a] border border-[#1e293b] rounded-2xl p-6 shadow-2xl">
             <h2 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
-              <i className="fa-solid fa-right-to-bracket text-indigo-400"></i>
+              <i className="fa-solid fa-right-to-bracket text-[#38bdf8]"></i>
               Join a Room
             </h2>
             <form onSubmit={handleJoinRoomSubmit} className="space-y-4">
@@ -347,7 +347,7 @@ export default function Rooms() {
                   onChange={(e) => handleRoomIdInput(e.target.value)}
                   required
                   maxLength={12}
-                  className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 font-mono text-lg tracking-wider text-center"
+                  className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50 font-mono text-lg tracking-wider text-center"
                   placeholder="ABC-123 or legacy ID"
                   autoFocus
                 />
@@ -366,7 +366,7 @@ export default function Rooms() {
                 <button
                   type="submit"
                   disabled={joinRoomId.length < 3}
-                  className="flex-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-lg bg-[#38bdf8] hover:bg-sky-400 text-black font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Join Room
                 </button>
@@ -390,7 +390,7 @@ export default function Rooms() {
             aria-hidden="true"
           />
           {/* Modal panel */}
-          <div className="relative w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/10 rounded-2xl p-6 shadow-2xl">
+          <div className="relative w-full max-w-md backdrop-blur-lg bg-[#0f172a] border border-[#1e293b] rounded-2xl p-6 shadow-2xl">
             <h2 className="text-white text-lg font-semibold mb-4">Create a new room</h2>
             <form onSubmit={handleCreateRoom} className="space-y-4">
               <div>
@@ -400,7 +400,7 @@ export default function Rooms() {
                   onChange={(e) => setNewRoomName(e.target.value)}
                   required
                   minLength={3}
-                  className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                  className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50"
                   placeholder="e.g. Collaboration Hub"
                 />
               </div>
@@ -410,7 +410,7 @@ export default function Rooms() {
                   value={newRoomDesc}
                   onChange={(e) => setNewRoomDesc(e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                  className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50"
                   placeholder="What is this room about?"
                 />
               </div>
@@ -447,7 +447,7 @@ export default function Rooms() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                  className="rounded-lg bg-[#38bdf8] hover:bg-sky-400 text-black font-medium px-4 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 >
                   Create
                 </button>

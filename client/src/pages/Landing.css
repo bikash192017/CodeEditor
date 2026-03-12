@@ -1,0 +1,164 @@
+/* Scoped Landing Page Styles to avoid bleeding into other React components */
+.landing-page {
+  background: #0f172a;
+  color: white;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.landing-page * {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.landing-page .navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 60px;
+  background: #020617;
+}
+
+.landing-page .logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.landing-page nav a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: white;
+  font-size: 15px;
+}
+
+.landing-page .nav-buttons button {
+  margin-left: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.landing-page .login {
+  background: #1e293b;
+  color: white;
+}
+
+.landing-page .join {
+  background: #38bdf8;
+  color: black;
+}
+
+.landing-page .hero {
+  text-align: center;
+  padding: 120px 20px;
+  background: linear-gradient(135deg, #020617, #1e3a8a);
+}
+
+.landing-page .hero h1 {
+  font-size: 55px;
+  margin-bottom: 20px;
+}
+
+.landing-page .hero p {
+  max-width: 650px;
+  margin: auto;
+  font-size: 18px;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.landing-page .hero-buttons {
+  margin-top: 35px;
+}
+
+.landing-page .primary {
+  background: #38bdf8;
+  color: black;
+  padding: 14px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.landing-page .secondary {
+  background: #1e293b;
+  color: white;
+  padding: 14px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.landing-page .features {
+  padding: 100px 60px;
+  text-align: center;
+  background: #020617;
+}
+
+.landing-page .features h2 {
+  font-size: 36px;
+  margin-bottom: 60px;
+}
+
+.landing-page .feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+.landing-page .feature-card {
+  background: #0f172a;
+  padding: 30px;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+}
+
+.landing-page .feature-card h3 {
+  margin-bottom: 10px;
+  color: #38bdf8;
+}
+
+.landing-page .about {
+  padding: 100px 60px;
+  text-align: center;
+  background: #0f172a;
+}
+
+.landing-page .about p {
+  max-width: 750px;
+  margin: auto;
+  margin-top: 20px;
+  line-height: 1.7;
+}
+
+.landing-page .cta {
+  text-align: center;
+  padding: 80px 20px;
+  background: linear-gradient(135deg, #1e3a8a, #020617);
+}
+
+.landing-page .cta button {
+  margin-top: 20px;
+  padding: 15px 35px;
+  border: none;
+  border-radius: 8px;
+  background: #38bdf8;
+  color: black;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.landing-page footer {
+  text-align: center;
+  padding: 25px;
+  background: #020617;
+  opacity: 0.8;
+}

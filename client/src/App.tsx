@@ -1,17 +1,17 @@
 // Removed nested Router; routing now handled by top-level BrowserRouter in index.tsx
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Rooms from './pages/Rooms'
 import RoomEditor from './pages/RoomEditor'
+import Landing from './pages/Landing'
 
 function App() {
   return (
     // Providers are now applied in index.tsx under BrowserRouter
     <Routes>
-      {/* Redirect root to login to avoid a seemingly blank landing page */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route element={<ProtectedRoute />}>

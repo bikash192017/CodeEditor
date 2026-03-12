@@ -28,9 +28,9 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 grid place-items-center p-4">
-      <div className="w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/10 rounded-2xl p-8 shadow-2xl">
-        <h1 className="text-2xl font-semibold text-white mb-6">Create your account</h1>
+    <div className="min-h-screen bg-[#0f172a] bg-gradient-to-br from-[#020617] to-[#1e3a8a] grid place-items-center p-4">
+      <div className="w-full max-w-md backdrop-blur-lg bg-[#0f172a]/80 border border-[#1e293b] rounded-2xl p-8 shadow-2xl">
+        <h1 className="text-2xl font-semibold text-[#38bdf8] mb-6">Create your account</h1>
         {error && (
           <div className="mb-4 text-sm text-rose-200 bg-rose-500/10 border border-rose-500/30 rounded-md p-3">
             <div className="flex justify-between items-center">
@@ -48,7 +48,7 @@ export default function Register() {
               onChange={(e) => setUsername(e.target.value)}
               required
               minLength={3}
-              className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50"
               placeholder="yourname"
             />
           </div>
@@ -59,7 +59,7 @@ export default function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50"
               placeholder="you@example.com"
             />
           </div>
@@ -71,17 +71,17 @@ export default function Register() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-300/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="w-full rounded-lg bg-[#1e293b] border border-white/10 text-white placeholder-slate-400 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#38bdf8]/50"
               placeholder="••••••••"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 transition text-white font-medium py-2 flex items-center justify-center disabled:opacity-60"
+            className="w-full rounded-lg bg-[#38bdf8] hover:bg-sky-400 transition text-black font-medium py-2 flex items-center justify-center disabled:opacity-60"
           >
             {isLoading ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-black/40 border-t-black" />
             ) : (
               'Create account'
             )}
@@ -89,7 +89,7 @@ export default function Register() {
         </form>
         <p className="text-slate-300/80 text-sm mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-emerald-300 hover:text-emerald-200 underline">Login</Link>
+          <Link to="/login" className="text-[#38bdf8] hover:text-sky-300 underline">Login</Link>
         </p>
       </div>
     </div>
