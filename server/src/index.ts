@@ -28,11 +28,23 @@ const allowedOrigins =
   process.env.CLIENT_URLS?.split(',').map((url) => url.trim()) || [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
+    'http://localhost:5178'
   ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const isLocalhost = origin.startsWith('http://localhost:');
+      if (isLocalhost || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );

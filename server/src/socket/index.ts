@@ -10,11 +10,21 @@ export function initializeSocket(httpServer: HttpServer): Server {
       'http://localhost:5174',
       'http://localhost:5175',
       'http://localhost:5176',
+      'http://localhost:5177',
+      'http://localhost:5178',
     ];
 
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        const isLocalhost = origin.startsWith('http://localhost:');
+        if (isLocalhost || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'), false);
+        }
+      },
       credentials: true,
     },
     transports: ['websocket', 'polling'],
