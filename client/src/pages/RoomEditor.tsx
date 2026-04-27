@@ -9,6 +9,41 @@ import { useCollaboration } from '../hooks/useCollaboration'
 import { useAuthStore } from '../stores/authStore'
 import { CursorOverlayManager } from '../utils/monacoCursors'
 import { format, parseISO } from 'date-fns'
+import { useWebRTC } from '../hooks/useWebRTC'
+
+const VideoPlayer = ({ stream, username, isLocal = false }: { stream: MediaStream, username: string, isLocal?: boolean }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isScreen = stream.getVideoTracks()[0]?.label.toLowerCase().includes('screen') || stream.id.includes('screen');
+  
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+  
+  return (
+    <div className={`relative rounded-lg overflow-hidden border-2 shadow-2xl bg-black mb-2 pointer-events-auto transition-all group ${
+      isExpanded 
+        ? 'fixed inset-4 z-50 border-indigo-500 w-auto h-auto' 
+        : (isScreen ? 'border-indigo-500 w-[400px] sm:w-[600px]' : 'border-gray-700 w-32 sm:w-48')
+    }`}>
+      <video ref={videoRef} autoPlay playsInline muted={isLocal} className={`w-full object-contain ${isExpanded ? 'h-full bg-black/90 rounded-lg' : 'h-auto'}`} />
+      
+      <div className="absolute bottom-1 left-1 bg-black/60 px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium text-white backdrop-blur-sm flex items-center gap-1">
+        <i className={`fa-solid ${isScreen ? 'fa-desktop' : 'fa-video'} ${isLocal ? 'text-green-400' : 'text-indigo-400'}`}></i>
+        <span className="truncate max-w-[100px]">{username} {isLocal ? '(You)' : ''}</span>
+      </div>
+
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="absolute top-2 right-2 bg-black/60 hover:bg-black text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <i className={`fa-solid ${isExpanded ? 'fa-compress' : 'fa-expand'}`}></i>
+      </button>
+    </div>
+  );
+};
 
 export default function RoomEditor() {
   const { roomId } = useParams()
@@ -59,6 +94,14 @@ export default function RoomEditor() {
 
   const [chatInput, setChatInput] = useState('')
   const [localUsers, setLocalUsers] = useState<Array<{ id: string; name: string; color: string; status: string }>>([])
+  
+  const { 
+    inCall, isCameraOn, isMicOn, isSharingScreen, 
+    localCameraStream, localScreenStream, remoteStreams, 
+    joinCall, leaveCall, toggleCamera, toggleMic, 
+    startScreenShare, stopScreenShare 
+  } = useWebRTC(roomId, localUsers)
+  
   const editorRef = useRef<any>(null)
   const cursorMgrRef = useRef<CursorOverlayManager | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -67,6 +110,7 @@ export default function RoomEditor() {
   const currentUser = useAuthStore((s) => s.user)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isTypingRef = useRef<boolean>(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -468,6 +512,29 @@ export default function RoomEditor() {
     }
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentUser?.username) return
+
+    // Limit file size to 2MB to prevent socket payload too large
+    if (file.size > 2 * 1024 * 1024) {
+      show('File must be less than 2MB', 'error')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string
+      // Send chat with empty message but with file
+      sendChat('', currentUser.username, base64Url, file.name, file.type)
+      show('File sent successfully', 'success')
+    }
+    reader.readAsDataURL(file)
+    
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -477,8 +544,27 @@ export default function RoomEditor() {
 
   const handleLanguageChange = (newLanguage: string) => {
     changeLanguage(newLanguage)
+    
+    // Sync active file name with new language extension
+    setFiles(prev => prev.map(f => {
+      if (f.id === activeFile) {
+        const ext = getFileExtension(newLanguage)
+        const nameWithoutExt = f.name.includes('.') ? f.name.substring(0, f.name.lastIndexOf('.')) : f.name
+        return { ...f, language: newLanguage, name: `${nameWithoutExt}${ext}` }
+      }
+      return f
+    }))
+    
     setShowLanguageDropdown(false)
   }
+
+  // Sync global language when active file tab changes
+  useEffect(() => {
+    const file = files.find(f => f.id === activeFile)
+    if (file && file.language !== language) {
+      changeLanguage(file.language)
+    }
+  }, [activeFile, files, language, changeLanguage])
 
   const handleCopyRoomId = async () => {
     if (!roomId) return
@@ -585,11 +671,47 @@ export default function RoomEditor() {
             <span className="text-sm">{localUsers.length} Online</span>
           </div>
 
-          {/* Share Button */}
-          <button className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 transition-all">
-            <i className="fa-solid fa-share"></i>
-            <span className="text-sm font-medium">Share</span>
-          </button>
+          {/* Discord-Style Call Controls */}
+          {inCall ? (
+            <div className="hidden lg:flex items-center gap-1 bg-gray-900/80 border border-gray-700 rounded-lg p-1">
+              <button 
+                onClick={toggleMic}
+                className={`p-2 rounded-md transition-colors ${isMicOn ? 'text-gray-300 hover:bg-gray-800' : 'text-red-400 bg-red-400/10 hover:bg-red-400/20'}`}
+                title={isMicOn ? "Mute" : "Unmute"}
+              >
+                <i className={`fa-solid ${isMicOn ? 'fa-microphone' : 'fa-microphone-slash'}`}></i>
+              </button>
+              <button 
+                onClick={toggleCamera}
+                className={`p-2 rounded-md transition-colors ${isCameraOn ? 'text-gray-300 hover:bg-gray-800' : 'text-red-400 bg-red-400/10 hover:bg-red-400/20'}`}
+                title={isCameraOn ? "Turn off camera" : "Turn on camera"}
+              >
+                <i className={`fa-solid ${isCameraOn ? 'fa-video' : 'fa-video-slash'}`}></i>
+              </button>
+              <button 
+                onClick={isSharingScreen ? stopScreenShare : startScreenShare}
+                className={`p-2 rounded-md transition-colors ${isSharingScreen ? 'text-indigo-400 bg-indigo-400/10 hover:bg-indigo-400/20' : 'text-gray-300 hover:bg-gray-800'}`}
+                title={isSharingScreen ? "Stop sharing" : "Share screen"}
+              >
+                <i className="fa-solid fa-desktop"></i>
+              </button>
+              <div className="w-px h-6 bg-gray-700 mx-1"></div>
+              <button 
+                onClick={leaveCall}
+                className="px-3 py-1.5 rounded-md bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={joinCall}
+              className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
+            >
+              <i className="fa-solid fa-phone-volume"></i>
+              <span className="text-sm font-medium">Join Call</span>
+            </button>
+          )}
 
           {/* Language Selector */}
           <div className="relative" ref={languageDropdownRef}>
@@ -675,7 +797,27 @@ export default function RoomEditor() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Floating Call Gallery */}
+        {(inCall || Object.values(remoteStreams).length > 0) && (
+          <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 pointer-events-none max-h-[80vh] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+            {/* Local Streams */}
+            {localCameraStream && (
+              <VideoPlayer stream={localCameraStream} username={currentUser?.username || 'You'} isLocal={true} />
+            )}
+            {localScreenStream && (
+              <VideoPlayer stream={localScreenStream} username={currentUser?.username || 'You'} isLocal={true} />
+            )}
+            
+            {/* Remote Streams */}
+            {Object.values(remoteStreams).map((rs) => (
+              rs.streams.map((stream, idx) => (
+                <VideoPlayer key={`${rs.username}-${idx}`} stream={stream} username={rs.username} />
+              ))
+            ))}
+          </div>
+        )}
+
         {/* Left Panel - Editor */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* File Tabs */}
@@ -975,7 +1117,27 @@ export default function RoomEditor() {
                                 : 'bg-gray-800 text-gray-200 rounded-bl-none'
                                 }`}
                             >
-                              {m.message}
+                              {m.fileUrl ? (
+                                m.fileType?.startsWith('image/') ? (
+                                  <div className="flex flex-col gap-2">
+                                    <img src={m.fileUrl} alt={m.fileName} className="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90" onClick={() => window.open(m.fileUrl)} />
+                                    {m.message && <span>{m.message}</span>}
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    <a href={m.fileUrl} download={m.fileName} className="flex items-center gap-2 px-3 py-2 bg-black/20 rounded-lg hover:bg-black/30 transition-colors">
+                                      <i className="fa-solid fa-file-arrow-down text-xl"></i>
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-medium truncate max-w-[150px]">{m.fileName}</span>
+                                        <span className="text-[10px] opacity-70">Click to download</span>
+                                      </div>
+                                    </a>
+                                    {m.message && <span>{m.message}</span>}
+                                  </div>
+                                )
+                              ) : (
+                                m.message
+                              )}
                             </div>
                             <span className="text-[11px] text-gray-500 mt-1 block text-right">
                               {(() => {
@@ -995,21 +1157,35 @@ export default function RoomEditor() {
                 </div>
 
                 <div className="p-4 border-t border-gray-800">
-                  <div className="relative">
+                  <div className="relative flex items-center">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute left-4 text-gray-400 hover:text-indigo-400 transition-colors z-10 p-1 rounded-full hover:bg-gray-700/50"
+                      title="Attach file"
+                    >
+                      <i className="fa-solid fa-paperclip text-[15px]"></i>
+                    </button>
                     <input
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Type a message..."
-                      className="w-full bg-gray-800 border border-gray-700 rounded-full pl-4 pr-12 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder-gray-500"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-full pl-12 pr-[90px] py-3 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder-gray-500"
                     />
                     <button
                       onClick={handleSendChat}
                       disabled={!chatInput.trim()}
-                      className="absolute right-2 top-2 flex items-center gap-2 px-4 py-1.5 bg-[#38bdf8] text-black rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 flex items-center gap-2 px-4 py-1.5 bg-[#38bdf8] hover:bg-sky-400 text-black rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="fa-solid fa-paper-plane text-xs"></i>
-                      <span>Send</span>
+                      <span className="hidden sm:inline">Send</span>
                     </button>
                   </div>
                 </div>

@@ -148,11 +148,16 @@ export function registerSocketHandlers(io: Server) {
     })
 
     // --- Chat Message ---
-    socket.on('chat:send', ({ roomId, message, username }) => {
-      if (!roomId || !message) return
+    socket.on('chat:send', ({ roomId, message, username, fileUrl, fileName, fileType }) => {
+      if (!roomId) return
+      if (!message && !fileUrl) return
+      
       const msg = {
         username,
-        message,
+        message: message || '',
+        fileUrl,
+        fileName,
+        fileType,
         at: new Date().toISOString(),
       }
       roomStates[roomId].chat.push(msg)
@@ -204,6 +209,30 @@ export function registerSocketHandlers(io: Server) {
         isTyping,
       })
       console.log(`📢 BROADCASTED TYPING to ${roomId}`)
+    })
+
+    // --- WebRTC Signaling for Screen Share ---
+    socket.on('webrtc:offer', ({ roomId, targetUserId, sdp, callerId, callerUsername }) => {
+      const targetSocket = Array.from(io.sockets.sockets.values()).find((s: any) => s.userId === targetUserId)
+      if (targetSocket) targetSocket.emit('webrtc:offer', { roomId, sdp, callerId, callerUsername })
+    })
+
+    socket.on('webrtc:answer', ({ targetUserId, sdp, answererId }) => {
+      const targetSocket = Array.from(io.sockets.sockets.values()).find((s: any) => s.userId === targetUserId)
+      if (targetSocket) targetSocket.emit('webrtc:answer', { sdp, answererId })
+    })
+
+    socket.on('webrtc:ice-candidate', ({ targetUserId, candidate, senderId }) => {
+      const targetSocket = Array.from(io.sockets.sockets.values()).find((s: any) => s.userId === targetUserId)
+      if (targetSocket) targetSocket.emit('webrtc:ice-candidate', { candidate, senderId })
+    })
+    
+    socket.on('webrtc:stop-share', ({ roomId, userId }) => {
+      socket.to(roomId).emit('webrtc:stop-share', { userId })
+    })
+
+    socket.on('webrtc:leave-call', ({ roomId, userId }) => {
+      socket.to(roomId).emit('webrtc:leave-call', { userId })
     })
 
     // --- Disconnect ---

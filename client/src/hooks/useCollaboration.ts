@@ -9,7 +9,7 @@ type UserCursor = {
   color?: string
 }
 
-type ChatMsg = { username: string; message: string; at: string }
+type ChatMsg = { username: string; message: string; at: string; fileUrl?: string; fileName?: string; fileType?: string }
 type TypingUser = { userId: string; username: string; isTyping: boolean }
 
 export function useCollaboration(roomId: string | undefined) {
@@ -90,8 +90,8 @@ export function useCollaboration(roomId: string | undefined) {
     }
 
     // Chat messages
-    const onChat = (p: { roomId: string; message: string; username: string; at: string }) => {
-      setChat(prev => [...prev, { username: p.username, message: p.message, at: p.at }])
+    const onChat = (p: { roomId: string; message: string; username: string; at: string; fileUrl?: string; fileName?: string; fileType?: string }) => {
+      setChat(prev => [...prev, { username: p.username, message: p.message, at: p.at, fileUrl: p.fileUrl, fileName: p.fileName, fileType: p.fileType }])
     }
 
     // Typing indicators
@@ -163,9 +163,9 @@ export function useCollaboration(roomId: string | undefined) {
   )
 
   const sendChat = useCallback(
-    (message: string, username: string) => {
+    (message: string, username: string, fileUrl?: string, fileName?: string, fileType?: string) => {
       if (!socket || !roomId) return
-      socket.emit('chat:send', { roomId, message, username })
+      socket.emit('chat:send', { roomId, message, username, fileUrl, fileName, fileType })
     },
     [socket, roomId],
   )
