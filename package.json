@@ -9,7 +9,9 @@
     "install:all": "npm run install:client && npm run install:server",
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && npm run dev",
+    "dev:spring": "set JAVA_HOME=C:\\Program Files\\Java\\jdk-22&& cd server-spring && mvnw.cmd spring-boot:run",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:with-spring": "concurrently \"npm run dev:spring\" \"npm run dev:client\"",
     "build:client": "cd client && npm run build",
     "start": "cd server && npm start"
   },
